@@ -1,12 +1,12 @@
 services:
 
   # ─── PHP-FPM ───────────────────────────────────────────────
-  php:
+  backend:
     build:
       context: ./docker/php
       dockerfile: Dockerfile
-    container_name: ${PHP_CONTAINER_NAME:-yii-link-php}
-    restart: ${PHP_RESTART_POLICY:-unless-stopped}
+    container_name: ${BACKEND_CONTAINER_NAME:-yii-link-backend}
+    restart: ${BACKEND_RESTART_POLICY:-unless-stopped}
     working_dir: /var/www/html
     volumes:
       - ./backend:/var/www/html
@@ -42,7 +42,7 @@ services:
       - ./backend:/var/www/html:ro
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
     depends_on:
-      - php
+      - backend
     networks:
       - yii-link
 

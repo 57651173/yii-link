@@ -30,10 +30,10 @@ docker compose build
 docker compose up -d
 ```
 
-3) 执行数据库迁移（在 `php` 容器内）
+3) 执行数据库迁移（在 `backend` 容器内）
 
 ```bash
-docker compose exec php php yii migrate/up --no-interaction
+docker compose exec backend php yii migrate/up --no-interaction
 ```
 
 4) 访问服务
@@ -57,7 +57,7 @@ docker compose logs -f nginx
 # 重载 Nginx（修改 docker/nginx/conf.d 后）
 docker compose exec nginx nginx -s reload
 
-# 进入 php 容器执行命令
-docker compose exec php sh
+# 进入 backend 容器执行命令
+docker compose exec backend sh
 ```
 

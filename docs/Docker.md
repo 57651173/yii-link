@@ -1,7 +1,7 @@
 ## Docker 使用说明（本项目）
 
 本项目使用 `docker compose` 一键启动开发环境，包含：
-- **php**：PHP-FPM（运行后端代码）
+- **backend**：PHP-FPM（运行后端代码）
 - **nginx**：Web 入口（反向代理到 PHP-FPM）
 - **mysql**：数据库（带 healthcheck）
 - **redis**：缓存（可选）
@@ -67,24 +67,22 @@ docker compose down
 
 ### 5. 数据库迁移（Migration）
 
-本项目把迁移命令与 `php` 共用同一个容器执行。
-
 执行迁移：
 
 ```bash
-docker compose exec php php yii migrate/up --no-interaction
+docker compose exec backend php yii migrate/up --no-interaction
 ```
 
 回滚最近一次迁移：
 
 ```bash
-docker compose exec php php yii migrate/down --no-interaction
+docker compose exec backend php yii migrate/down --no-interaction
 ```
 
 查看迁移历史：
 
 ```bash
-docker compose exec php php yii migrate/history
+docker compose exec backend php yii migrate/history
 ```
 
 > 说明：项目的 `backend/yii` 已做兼容，你可以用 `migrate/up`（斜杠风格），它会自动映射到 `migrate:up`（冒号风格）。
@@ -134,8 +132,8 @@ Redis 配置文件为：
 docker compose up -d
 ```
 
-#### 9.2 PHP 容器没起来 / 依赖服务未就绪
-`php` 会等待 `mysql` 通过 healthcheck 后再启动。你可以看 mysql 日志：
+#### 9.2 Backend 容器没起来 / 依赖服务未就绪
+`backend` 会等待 `mysql` 通过 healthcheck 后再启动。你可以看 mysql 日志：
 
 ```bash
 docker compose logs -f mysql
