@@ -1,0 +1,119 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Yii Console 统一入口
+ *
+ * 用法：
+ *   php yii <command>
+ *
+ * 迁移命令：
+ *   php yii migrate:up               # 执行所有待运行的迁移
+ *   php yii migrate:down             # 回滚最近一次迁移
+ *   php yii migrate:history          # 查看迁移历史
+ *   php yii migrate:new              # 查看尚未执行的迁移
+ *   php yii migrate:redo             # 重跑最近一次迁移（down + up）
+ *   php yii migrate:create CreateXxxTable  # 新建迁移文件
+ *
+ * 内置命令：
+ *   php yii serve                    # 启动 PHP 内置开发服务器
+ *   php yii list                     # 列出所有可用命令
+ */
+
+use Yiisoft\Db\Cache\SchemaCache;
+use Yiisoft\Db\Migration\Command\CreateCommand;
+use Yiisoft\Db\Migration\Command\DownCommand;
+use Yiisoft\Db\Migration\Command\HistoryCommand;
+use Yiisoft\Db\Migration\Command\NewCommand;
+use Yiisoft\Db\Migration\Command\RedoCommand;
+use Yiisoft\Db\Migration\Command\UpdateCommand;
+use Yiisoft\Db\Migration\Informer\ConsoleMigrationInformer;
+use Yiisoft\Db\Migration\Migrator;
+use Yiisoft\Db\Migration\Runner\DownRunner;
+use Yiisoft\Db\Migration\Runner\UpdateRunner;
+use Yiisoft\Db\Migration\Service\Generate\CreateService;
+use Yiisoft\Db\Migration\Service\MigrationService;
+use Yiisoft\Db\Mysql\Connection as MysqlConnection;
+use Yiisoft\Db\Mysql\Driver as MysqlDriver;
+use Yiisoft\Di\Container;
+use Yiisoft\Di\ContainerConfig;
+use Yiisoft\Injector\Injector;
+use Yiisoft\Yii\Console\Application;
+use Yiisoft\Yii\Console\CommandLoader;
+
+$rootDir = __DIR__;
+require $rootDir . '/vendor/autoload.php';
+
+// ── 1. 加载 .env ──────────────────────────────────────────────────
+$envFile = $rootDir . '/.env';
+if (file_exists($envFile)) {
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        if (str_starts_with(trim($line), '#') || !str_contains($line, '=')) {
+            continue;
+        }
+        [$key, $value] = explode('=', $line, 2);
+        $_ENV[trim($key)] = trim($value);
+        putenv(trim($key) . '=' . trim($value));
+    }
+}
+
+// ── 2. 构建数据库连接 ──────────────────────────────────────────────
+$driver = new MysqlDriver(
+    $_ENV['DB_DSN'] ?? 'mysql:host=127.0.0.1;dbname=yii_link;charset=utf8mb4',
+    $_ENV['DB_USER'] ?? 'root',
+    $_ENV['DB_PASS'] ?? '',
+);
+$schemaCache = new SchemaCache(
+    new \Yiisoft\Cache\File\FileCache($rootDir . '/runtime/cache')
+);
+$db = new MysqlConnection($driver, $schemaCache);
+
+// ── 3. 构建 DI 容器（与 HTTP 入口共用同一份 container.php）────────
+$params      = require $rootDir . '/config/params.php';
+$definitions = (require $rootDir . '/config/container.php')($params);
+
+// 注册数据库连接到容器，供自定义 Console 命令通过 DI 注入
+use Yiisoft\Db\Connection\ConnectionInterface;
+$definitions[ConnectionInterface::class] = static fn () => $db;
+
+$container = new Container(ContainerConfig::create()->withDefinitions($definitions));
+$injector  = new Injector($container);
+
+// ── 4. 构建 Migrator ──────────────────────────────────────────────
+$migrationInformer = new ConsoleMigrationInformer();
+$migrator = new Migrator(
+    db: $db,
+    informer: $migrationInformer,
+    historyTable: '{{%migration}}',
+);
+$downRunner   = new DownRunner($migrator);
+$updateRunner = new UpdateRunner($migrator);
+
+// ── 5. 构建 MigrationService ──────────────────────────────────────
+$migrationService = new MigrationService($db, $injector, $migrator);
+$migrationService->setNewMigrationPath($rootDir . '/database/migrations');
+$migrationService->setSourcePaths([$rootDir . '/database/migrations']);
+
+$createService = new CreateService($db, useTablePrefix: false);
+
+// ── 6. 构建 Console Application，注册所有命令 ─────────────────────
+$app = new Application('Yii-Link Console', '1.0.0');
+
+$app->addCommands([
+    // migrate 命令组
+    new UpdateCommand($updateRunner, $migrationService, $migrator),
+    new DownCommand($downRunner, $migrationService, $migrator),
+    new HistoryCommand($migrationService, $migrator),
+    new NewCommand($migrationService, $migrator),
+    new RedoCommand($migrationService, $migrator, $downRunner, $updateRunner),
+    new CreateCommand($createService, $migrationService, $migrator),
+]);
+
+// 通过 CommandLoader 支持 DI 懒加载自定义命令（未来扩展用）
+// $app->setCommandLoader(new CommandLoader($container, [
+//     'my:command' => MyCustomCommand::class,
+// ]));
+
+exit($app->run());

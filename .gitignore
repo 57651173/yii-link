@@ -1,0 +1,15 @@
+# Docker 数据持久化目录（不提交到 Git）
+docker/mysql/data/
+docker/redis/data/
+
+# macOS
+.DS_Store
+
+# Node / 前端（如果未来引入）
+**/node_modules/
+**/dist/
+**/.vite/
+
+# IDE
+.idea/
+.vscode/

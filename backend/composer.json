@@ -1,0 +1,53 @@
+{
+    "name": "yii-link/yii-link",
+    "description": "Yii3 API 企业级脚手架 - ERP/WMS/SaaS 后台服务",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1",
+        "firebase/php-jwt": "^6.10",
+        "laminas/laminas-diactoros": "^3.5",
+        "nyholm/psr7": "^1.8",
+        "nyholm/psr7-server": "^1.1",
+        "yiisoft/aliases": "^3.0",
+        "yiisoft/cache": "^3.0",
+        "yiisoft/cache-file": "^3.0",
+        "yiisoft/config": "^1.6",
+        "yiisoft/data-response": "^2.0",
+        "yiisoft/db": "^2.0",
+        "yiisoft/db-migration": "^2.0",
+        "yiisoft/db-mysql": "^2.0",
+        "yiisoft/di": "^1.4",
+        "yiisoft/log": "^2.0",
+        "yiisoft/log-target-file": "^3.0",
+        "yiisoft/middleware-dispatcher": "^5.0",
+        "yiisoft/router-fastroute": "^3.0",
+        "yiisoft/validator": "^2.0",
+        "yiisoft/yii-console": "^2.4",
+        "yiisoft/yii-runner-http": "^3.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Application\\": "application/",
+            "Domain\\": "domain/",
+            "Infrastructure\\": "infrastructure/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "yiisoft/config": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
