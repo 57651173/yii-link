@@ -111,6 +111,23 @@ $app->addCommands([
     new CreateCommand($createService, $migrationService, $migrator),
 ]);
 
+// ── 7. 兼容命令别名（支持 migrate/up 风格）──────────────────────────
+// Yii3 的 yiisoft/db-migration 默认命令名是 migrate:up / migrate:down 等（冒号风格）。
+// 为了兼容部分同学习惯的 migrate/up（斜杠风格），这里做一次参数改写。
+if (isset($argv[1]) && is_string($argv[1])) {
+    $map = [
+        'migrate/up' => 'migrate:up',
+        'migrate/down' => 'migrate:down',
+        'migrate/history' => 'migrate:history',
+        'migrate/new' => 'migrate:new',
+        'migrate/redo' => 'migrate:redo',
+        'migrate/create' => 'migrate:create',
+    ];
+    if (isset($map[$argv[1]])) {
+        $argv[1] = $map[$argv[1]];
+    }
+}
+
 // 通过 CommandLoader 支持 DI 懒加载自定义命令（未来扩展用）
 // $app->setCommandLoader(new CommandLoader($container, [
 //     'my:command' => MyCustomCommand::class,
