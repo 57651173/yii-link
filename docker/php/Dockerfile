@@ -27,11 +27,33 @@ RUN apk add --no-cache \
         intl \
         opcache
 
-# 安装 Redis 扩展
-RUN apk add --no-cache $PHPIZE_DEPS \
-    && pecl install redis \
+# 安装 Redis 扩展（PECL）
+# 注意：在 Alpine 官方 PHP 镜像里，`$PHPIZE_DEPS` 可能未定义；
+# 同时 `pecl install redis` 在未固定版本时偶发解析失败，因此固定版本并显式安装编译依赖。
+RUN apk add --no-cache \
+        autoconf \
+        dpkg-dev \
+        dpkg \
+        file \
+        g++ \
+        gcc \
+        libc-dev \
+        make \
+        pkgconf \
+        re2c \
+    && pecl install redis-6.3.0 \
     && docker-php-ext-enable redis \
-    && apk del $PHPIZE_DEPS
+    && apk del --no-cache \
+        autoconf \
+        dpkg-dev \
+        dpkg \
+        file \
+        g++ \
+        gcc \
+        libc-dev \
+        make \
+        pkgconf \
+        re2c
 
 # 安装 Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

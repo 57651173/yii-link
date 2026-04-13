@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         failOnWarning="true"
+         failOnRisky="true">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+
+    <source>
+        <include>
+            <directory suffix=".php">app</directory>
+            <directory suffix=".php">application</directory>
+            <directory suffix=".php">domain</directory>
+        </include>
+        <exclude>
+            <directory>vendor</directory>
+            <directory>tests</directory>
+            <directory>runtime</directory>
+        </exclude>
+    </source>
+
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_DEBUG" value="true"/>
+        <env name="DB_HOST" value="mysql"/>
+        <env name="DB_NAME" value="yii_link_test"/>
+        <env name="DB_USER" value="yii_link"/>
+        <env name="DB_PASS" value="yii_link_secret"/>
+    </php>
+</phpunit>

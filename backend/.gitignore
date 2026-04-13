@@ -4,6 +4,8 @@
 /.env
 /composer.lock
 
+/docs
+
 # PHPUnit / IDE
 /.phpunit.result.cache
 /.idea/

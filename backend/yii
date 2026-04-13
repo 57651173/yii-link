@@ -17,6 +17,9 @@ declare(strict_types=1);
  *   php yii migrate:redo             # 重跑最近一次迁移（down + up）
  *   php yii migrate:create CreateXxxTable  # 新建迁移文件
  *
+ * 种子数据（初始数据，与 migrate 分离）：
+ *   php yii seed:run                # 按文件名顺序执行 database/seeds/M*.php
+ *
  * 内置命令：
  *   php yii serve                    # 启动 PHP 内置开发服务器
  *   php yii list                     # 列出所有可用命令
@@ -40,13 +43,33 @@ use Yiisoft\Db\Mysql\Driver as MysqlDriver;
 use Yiisoft\Di\Container;
 use Yiisoft\Di\ContainerConfig;
 use Yiisoft\Injector\Injector;
+use App\Console\SeedRunCommand;
 use Yiisoft\Yii\Console\Application;
 use Yiisoft\Yii\Console\CommandLoader;
 
 $rootDir = __DIR__;
 require $rootDir . '/vendor/autoload.php';
 
-// ── 1. 加载 .env ──────────────────────────────────────────────────
+// ── 0. 兼容 migrate/up 风格（Symfony Console 读的是 $_SERVER['argv']，不能只改 $argv）
+$migrateSlashAliases = [
+    'migrate/up' => 'migrate:up',
+    'migrate/down' => 'migrate:down',
+    'migrate/history' => 'migrate:history',
+    'migrate/new' => 'migrate:new',
+    'migrate/redo' => 'migrate:redo',
+    'migrate/create' => 'migrate:create',
+];
+if (isset($_SERVER['argv'][1]) && is_string($_SERVER['argv'][1])) {
+    $cmd = $_SERVER['argv'][1];
+    if (isset($migrateSlashAliases[$cmd])) {
+        $_SERVER['argv'][1] = $migrateSlashAliases[$cmd];
+        if (isset($argv[1])) {
+            $argv[1] = $migrateSlashAliases[$cmd];
+        }
+    }
+}
+
+// ── 1. 加载 .env（不覆盖已在环境中存在的变量，便于 Docker Compose 注入 DB_DSN 等）
 $envFile = $rootDir . '/.env';
 if (file_exists($envFile)) {
     foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
@@ -54,8 +77,17 @@ if (file_exists($envFile)) {
             continue;
         }
         [$key, $value] = explode('=', $line, 2);
-        $_ENV[trim($key)] = trim($value);
-        putenv(trim($key) . '=' . trim($value));
+        $key = trim($key);
+        if ($key === '') {
+            continue;
+        }
+        // 与常见 dotenv 行为一致：系统/Docker 已设置的变量优先
+        if (getenv($key) !== false) {
+            continue;
+        }
+        $value = trim($value);
+        $_ENV[$key] = $value;
+        putenv($key . '=' . $value);
     }
 }
 
@@ -109,24 +141,8 @@ $app->addCommands([
     new NewCommand($migrationService, $migrator),
     new RedoCommand($migrationService, $migrator, $downRunner, $updateRunner),
     new CreateCommand($createService, $migrationService, $migrator),
+    new SeedRunCommand($db),
 ]);
-
-// ── 7. 兼容命令别名（支持 migrate/up 风格）──────────────────────────
-// Yii3 的 yiisoft/db-migration 默认命令名是 migrate:up / migrate:down 等（冒号风格）。
-// 为了兼容部分同学习惯的 migrate/up（斜杠风格），这里做一次参数改写。
-if (isset($argv[1]) && is_string($argv[1])) {
-    $map = [
-        'migrate/up' => 'migrate:up',
-        'migrate/down' => 'migrate:down',
-        'migrate/history' => 'migrate:history',
-        'migrate/new' => 'migrate:new',
-        'migrate/redo' => 'migrate:redo',
-        'migrate/create' => 'migrate:create',
-    ];
-    if (isset($map[$argv[1]])) {
-        $argv[1] = $map[$argv[1]];
-    }
-}
 
 // 通过 CommandLoader 支持 DI 懒加载自定义命令（未来扩展用）
 // $app->setCommandLoader(new CommandLoader($container, [

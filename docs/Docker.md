@@ -70,13 +70,13 @@ docker compose down
 执行迁移：
 
 ```bash
-docker compose exec backend php yii migrate/up --no-interaction
+docker compose exec backend php yii migrate/up -y
 ```
 
 回滚最近一次迁移：
 
 ```bash
-docker compose exec backend php yii migrate/down --no-interaction
+docker compose exec backend php yii migrate/down -y
 ```
 
 查看迁移历史：
@@ -86,6 +86,16 @@ docker compose exec backend php yii migrate/history
 ```
 
 > 说明：项目的 `backend/yii` 已做兼容，你可以用 `migrate/up`（斜杠风格），它会自动映射到 `migrate:up`（冒号风格）。
+
+### 5.1 初始数据（Seeds）
+
+表结构由迁移创建；**演示账号等初始数据**放在 `backend/database/seeds/`，需单独执行：
+
+```bash
+docker compose exec backend php yii seed:run
+```
+
+演示账号的明文密码写在 `backend/database/seeds/M*.php` 源码常量中（入库仍为 bcrypt）。种子按文件名 `M…` 升序执行，可重复执行：相同邮箱已存在则跳过插入。
 
 ### 6. Nginx 配置（conf.d 目录挂载）
 
@@ -138,4 +148,23 @@ docker compose up -d
 ```bash
 docker compose logs -f mysql
 ```
+
+#### 9.3 迁移或接口报错：`getaddrinfo for mysql failed: Name does not resolve`
+
+说明 **`backend` 容器里解析不到主机名 `mysql`**，几乎总是 **MySQL 容器没和 backend 在同一个 Docker 网络上**（常见于历史容器、网络名变化、手动改过容器）。
+
+**推荐修复（重建网络与容器）：**
+
+```bash
+docker compose down
+docker compose up -d --force-recreate
+```
+
+**自检（应能看到 `mysql` 与 `backend` 在同一网络里）：**
+
+```bash
+docker network inspect yii-link-net --format '{{range .Containers}}{{.Name}} {{end}}'
+```
+
+若列表里**没有** `mysql`，说明 MySQL 未挂到 `yii-link-net`，请再执行上面的 `down` + `up --force-recreate`。
 

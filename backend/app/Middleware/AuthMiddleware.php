@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Middleware;
 
 use App\Response\ApiResponse;
+use Application\Tenant\TenantContext;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Firebase\JWT\ExpiredException;
@@ -27,10 +28,12 @@ class AuthMiddleware implements MiddlewareInterface
     private string $secretKey;
     private string $algorithm;
 
-    public function __construct(array $params = [])
-    {
-        $this->secretKey = $params['jwt']['secret_key'] ?? 'default-secret-key';
-        $this->algorithm = $params['jwt']['algorithm'] ?? 'HS256';
+    public function __construct(
+        private readonly array $params,
+        private readonly TenantContext $tenantContext,
+    ) {
+        $this->secretKey = $this->params['jwt']['secret_key'] ?? 'default-secret-key';
+        $this->algorithm = $this->params['jwt']['algorithm'] ?? 'HS256';
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -54,9 +57,21 @@ class AuthMiddleware implements MiddlewareInterface
         try {
             $payload = JWT::decode($token, new Key($this->secretKey, $this->algorithm));
 
+            $defaultTenantId = (string)($this->params['default_tenant_id'] ?? '');
+            $tidFromToken    = isset($payload->tid) ? (string)$payload->tid : '';
+            $userAccount     = isset($payload->name) ? (string)$payload->name : ''; // 从 JWT 提取 account
+            
+            if ($tidFromToken !== '') {
+                $this->tenantContext->setTenantId($tidFromToken);
+            } elseif ($defaultTenantId !== '') {
+                $this->tenantContext->setTenantId($defaultTenantId);
+            }
+
             // 将解码后的用户信息注入请求属性，供 Controller 使用
             $request = $request
                 ->withAttribute('auth_user_id', $payload->sub)
+                ->withAttribute('auth_user_account', $userAccount)
+                ->withAttribute('auth_tenant_id', $this->tenantContext->getTenantId())
                 ->withAttribute('auth_payload', $payload);
 
             return $handler->handle($request);

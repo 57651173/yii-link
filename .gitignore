@@ -5,10 +5,13 @@ docker/redis/data/
 # macOS
 .DS_Store
 
+script/
+
 # Node / 前端（如果未来引入）
-**/node_modules/
-**/dist/
-**/.vite/
+frontend/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
 
 # IDE
 .idea/
@@ -18,3 +21,4 @@ docker/redis/data/
 .env
 .env.local
 .env.*.local
+test-*.sh

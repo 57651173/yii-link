@@ -16,6 +16,8 @@ class User
     private string $email;
     private string $passwordHash;
     private string $status;
+    private ?string $tenantId;
+    private bool $isPlatformAdmin;
     private \DateTimeImmutable $createdAt;
     private \DateTimeImmutable $updatedAt;
 
@@ -31,12 +33,16 @@ class User
         ?int $id = null,
         ?\DateTimeImmutable $createdAt = null,
         ?\DateTimeImmutable $updatedAt = null,
+        ?string $tenantId = null,
+        bool $isPlatformAdmin = false,
     ) {
         $this->id           = $id;
         $this->name         = $name;
         $this->email        = $email;
         $this->passwordHash = $passwordHash;
         $this->status       = $status;
+        $this->tenantId     = $tenantId;
+        $this->isPlatformAdmin = $isPlatformAdmin;
         $this->createdAt    = $createdAt ?? new \DateTimeImmutable();
         $this->updatedAt    = $updatedAt ?? new \DateTimeImmutable();
     }
@@ -66,6 +72,11 @@ class User
         return $this->status;
     }
 
+    public function getTenantId(): ?string
+    {
+        return $this->tenantId;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -79,6 +90,11 @@ class User
     public function isActive(): bool
     {
         return $this->status === self::STATUS_ACTIVE;
+    }
+
+    public function isPlatformAdmin(): bool
+    {
+        return $this->isPlatformAdmin;
     }
 
     public function rename(string $name): self
@@ -113,6 +129,22 @@ class User
         return $clone;
     }
 
+    public function activate(): self
+    {
+        $clone         = clone $this;
+        $clone->status = self::STATUS_ACTIVE;
+        $clone->updatedAt = new \DateTimeImmutable();
+        return $clone;
+    }
+
+    public function ban(): self
+    {
+        $clone         = clone $this;
+        $clone->status = self::STATUS_BANNED;
+        $clone->updatedAt = new \DateTimeImmutable();
+        return $clone;
+    }
+
     public function toArray(): array
     {
         return [
@@ -120,6 +152,8 @@ class User
             'name'       => $this->name,
             'email'      => $this->email,
             'status'     => $this->status,
+            'tenant_id'  => $this->tenantId,
+            'is_platform_admin' => $this->isPlatformAdmin,
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
         ];

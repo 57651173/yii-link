@@ -25,6 +25,18 @@ interface UserRepositoryInterface
     public function findByEmail(string $email): ?User;
 
     /**
+     * 通过账号查找用户
+     */
+    public function findByAccount(string $account): ?User;
+
+    /**
+     * 通过邮箱或账号查找用户（用于登录）
+     *
+     * @param ?string $tenantId 指定租户主键时仅在该租户内查找；为 null 时在全库查找且必须唯一命中一行
+     */
+    public function findByEmailOrAccount(string $credential, ?string $tenantId = null): ?User;
+
+    /**
      * 获取所有用户列表（支持分页）
      *
      * @return array{items: User[], total: int}
@@ -37,12 +49,22 @@ interface UserRepositoryInterface
     public function save(User $user): User;
 
     /**
-     * 删除用户
+     * 删除用户（通过 ID）
      */
     public function delete(int $id): bool;
+
+    /**
+     * 删除用户（通过 account）
+     */
+    public function deleteByAccount(string $account): bool;
 
     /**
      * 判断邮箱是否已被使用
      */
     public function emailExists(string $email, ?int $excludeId = null): bool;
+
+    /**
+     * 判断账号是否存在
+     */
+    public function accountExists(string $account, ?string $excludeAccount = null): bool;
 }

@@ -5,7 +5,7 @@ services:
     build:
       context: ./docker/php
       dockerfile: Dockerfile
-    container_name: ${BACKEND_CONTAINER_NAME:-yii-link-backend}
+    container_name: ${BACKEND_CONTAINER_NAME:-backend}
     restart: ${BACKEND_RESTART_POLICY:-unless-stopped}
     working_dir: /var/www/html
     volumes:
@@ -34,7 +34,7 @@ services:
     build:
       context: ./docker/nginx
       dockerfile: Dockerfile
-    container_name: ${NGINX_CONTAINER_NAME:-yii-link-nginx}
+    container_name: ${NGINX_CONTAINER_NAME:-nginx}
     restart: ${NGINX_RESTART_POLICY:-unless-stopped}
     ports:
       - "${NGINX_HTTP_PORT:-8000}:80"
@@ -51,7 +51,7 @@ services:
     build:
       context: ./docker/mysql
       dockerfile: Dockerfile
-    container_name: ${MYSQL_CONTAINER_NAME:-yii-link-mysql}
+    container_name: ${MYSQL_CONTAINER_NAME:-mysql}
     restart: ${MYSQL_RESTART_POLICY:-unless-stopped}
     ports:
       - "${MYSQL_PORT:-3306}:3306"
@@ -86,7 +86,7 @@ services:
     build:
       context: ./docker/redis
       dockerfile: Dockerfile
-    container_name: ${REDIS_CONTAINER_NAME:-yii-link-redis}
+    container_name: ${REDIS_CONTAINER_NAME:-redis}
     restart: ${REDIS_RESTART_POLICY:-unless-stopped}
     ports:
       - "${REDIS_PORT:-6379}:6379"
@@ -96,5 +96,7 @@ services:
       - yii-link
 
 networks:
+  # 固定网络名，避免不同目录/项目名下出现多套网络，导致 mysql 与 backend 不在同一网络、无法解析主机名 mysql
   yii-link:
+    name: yii-link-net
     driver: bridge
